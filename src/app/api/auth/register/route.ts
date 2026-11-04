@@ -9,6 +9,30 @@ import {
   sanitizeString,
 } from "@/lib/security";
 
+/**
+ * GET /api/auth/register - Check if initial shop owner setup is pending or already completed
+ */
+export async function GET() {
+  try {
+    const ownerCount = await prisma.user.count({
+      where: { role: "OWNER" },
+    });
+
+    return NextResponse.json({
+      initialized: ownerCount > 0,
+      canRegisterOwner: ownerCount === 0,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Failed to check workspace registration status." },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/auth/register - First-time Shop Owner Account Creation
+ */
 export async function POST(req: Request) {
   try {
     // 1. Client IP / rate limit identifier
@@ -30,18 +54,32 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2. Real-Market Security Check: Is the shop already claimed by an Owner?
+    const existingOwner = await prisma.user.findFirst({
+      where: { role: "OWNER" },
+    });
+
+    if (existingOwner) {
+      return NextResponse.json(
+        {
+          error:
+            "This boutique workspace already has an active Owner. Counter sellers and staff accounts must be created by the Owner inside the dashboard.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const rawName = body.name || "";
     const rawEmail = body.email || "";
     const rawUsername = body.username || "";
     const rawPassword = body.password || "";
-    const requestedRole = body.role || "OWNER";
 
-    // 2. Strict Input Validations
+    // 3. Strict Input Validations
     const name = sanitizeString(rawName);
     if (!name || name.length < 2 || name.length > 100) {
       return NextResponse.json(
-        { error: "Full name must be between 2 and 100 characters." },
+        { error: "Owner full name must be between 2 and 100 characters." },
         { status: 400 }
       );
     }
@@ -76,7 +114,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Uniqueness Checks
+    // 4. Uniqueness Checks
     const existingUsername = await prisma.user.findUnique({
       where: { username },
     });
@@ -99,28 +137,17 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Role Authorization Rule:
-    // If this is the first user ever registered, they are always granted OWNER.
-    const totalUsers = await prisma.user.count();
-    let finalRole: "OWNER" | "SELLER" = "SELLER";
-
-    if (totalUsers === 0) {
-      finalRole = "OWNER";
-    } else {
-      finalRole = requestedRole === "OWNER" ? "OWNER" : "SELLER";
-    }
-
     // 5. Secure Password Hashing (bcrypt with 12 salt rounds)
     const passwordHash = await hashPassword(rawPassword);
 
-    // 6. Create User in Database
-    const newUser = await prisma.user.create({
+    // 6. Create Primary Shop Owner
+    const newOwner = await prisma.user.create({
       data: {
         name,
         email,
         username,
         passwordHash,
-        role: finalRole,
+        role: "OWNER",
         status: "ACTIVE",
       },
     });
@@ -129,27 +156,27 @@ export async function POST(req: Request) {
     try {
       await prisma.auditLog.create({
         data: {
-          userId: newUser.id,
-          action: "USER_REGISTERED",
+          userId: newOwner.id,
+          action: "SHOP_INITIALIZED",
           entity: "User",
-          entityId: newUser.id,
+          entityId: newOwner.id,
           details: JSON.stringify({
-            username: newUser.username,
-            role: finalRole,
+            username: newOwner.username,
+            role: "OWNER",
             ip: clientIp,
           }),
         },
       });
     } catch {
-      // Non-blocking audit log
+      // Non-blocking
     }
 
     // 8. Sign JWT
     const token = signToken({
-      id: newUser.id,
-      name: newUser.name,
-      username: newUser.username,
-      role: finalRole,
+      id: newOwner.id,
+      name: newOwner.name,
+      username: newOwner.username,
+      role: "OWNER",
     });
 
     // 9. Response with HTTP-Only Cookie + JSON
@@ -157,11 +184,11 @@ export async function POST(req: Request) {
       success: true,
       token,
       user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        username: newUser.username,
-        role: finalRole,
+        id: newOwner.id,
+        name: newOwner.name,
+        email: newOwner.email,
+        username: newOwner.username,
+        role: "OWNER",
       },
     });
 

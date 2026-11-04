@@ -100,3 +100,4 @@ export function sanitizeString(input: string): string {
     .replace(/[<>]/g, "") // Strip dangerous HTML brackets
     .trim();
 }
+

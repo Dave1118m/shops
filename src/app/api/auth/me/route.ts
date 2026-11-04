@@ -53,3 +53,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }
+

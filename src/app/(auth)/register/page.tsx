@@ -1,9 +1,19 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, ShieldCheck, UserPlus, AlertCircle, Check } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  UserPlus,
+  AlertCircle,
+  Check,
+  Lock,
+  RefreshCw,
+} from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,11 +23,26 @@ export default function RegisterPage() {
     username: "",
     password: "",
     confirmPassword: "",
-    role: "OWNER",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Shop workspace initialization check
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [isShopInitialized, setIsShopInitialized] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/register")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsShopInitialized(!!data.initialized);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setCheckingStatus(false);
+      });
+  }, []);
 
   // Live password strength calculation
   const passwordCriteria = useMemo(() => {
@@ -91,7 +116,6 @@ export default function RegisterPage() {
           email: trimmedEmail || undefined,
           username: trimmedUsername,
           password: formData.password,
-          role: formData.role,
         }),
       });
 
@@ -111,12 +135,8 @@ export default function RegisterPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      // Redirect based on role
-      if (data.user.role === "OWNER") {
-        router.push("/dashboard");
-      } else {
-        router.push("/pos");
-      }
+      // First user is owner, redirect directly to owner dashboard
+      router.push("/dashboard");
     } catch {
       setError("Network error. Unable to connect to the authentication server.");
       setLoading(false);
@@ -147,282 +167,279 @@ export default function RegisterPage() {
           </span>
         </header>
 
-        {/* Form Area */}
+        {/* Content Area */}
         <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-24 py-8">
           <div className="w-full max-w-md space-y-6">
-            <div>
-              <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-2">
-                Get Started
-              </p>
-              <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-                Create account.
-              </h2>
-              <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                Register your shop credentials to access the POS counter and financial ledger.
-              </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                <span className="leading-snug">{error}</span>
+            {checkingStatus ? (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+                <RefreshCw className="w-6 h-6 animate-spin text-amber-700 mb-2" />
+                <p className="text-xs">Verifying boutique workspace status...</p>
               </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Dave Mihrete"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
-                  required
-                  autoFocus
-                  autoComplete="name"
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ) : isShopInitialized ? (
+              /* Public Registration Locked - Shop Already Has an Owner */
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 text-center space-y-5">
+                <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                  <Lock className="w-6 h-6" />
+                </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. dave_owner"
-                    value={formData.username}
-                    onChange={(e) =>
-                      setFormData({ ...formData, username: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
-                    required
-                    autoComplete="username"
-                    disabled={loading}
-                  />
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Boutique Workspace Active
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    This boutique shop has already been registered and claimed by the Shop Owner.
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Staff and counter sellers cannot self-register; your account must be added by the Owner inside the dashboard.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Email address <span className="text-slate-400 font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
-                    autoComplete="email"
-                    disabled={loading}
-                  />
-                </div>
+                <Link
+                  href="/login"
+                  className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition"
+                >
+                  Sign in to workspace <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-
-              {/* Password Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ) : (
+              /* Initial Shop Owner Account Setup */
+              <>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Password <span className="text-slate-400">(min 8)</span>
-                  </label>
-                  <div className="relative">
+                  <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-2">
+                    Initial Setup
+                  </p>
+                  <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+                    Setup your shop.
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
+                    Create the master Owner account to manage your boutique, staff, and cash drawer.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <span className="leading-snug">{error}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Owner Full Name
+                    </label>
                     <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Min 8 chars"
-                      value={formData.password}
+                      type="text"
+                      placeholder="e.g. Dave Mihrete"
+                      value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
+                        setFormData({ ...formData, name: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition pr-10"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
                       required
-                      autoComplete="new-password"
+                      autoFocus
+                      autoComplete="name"
                       disabled={loading}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-3.5 h-3.5" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                    </button>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Confirm password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="Re-enter password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition ${
-                      passwordsMatch
-                        ? "border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
-                        : "border-slate-300 focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600"
-                    }`}
-                    required
-                    autoComplete="new-password"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Owner Username
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. dave_owner"
+                        value={formData.username}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
+                        required
+                        autoComplete="username"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Email address{" "}
+                        <span className="text-slate-400 font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="owner@yourboutique.com"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
+                        autoComplete="email"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Master Password <span className="text-slate-400">(min 8)</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Min 8 chars"
+                          value={formData.password}
+                          onChange={(e) =>
+                            setFormData({ ...formData, password: e.target.value })
+                          }
+                          className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition pr-10"
+                          required
+                          autoComplete="new-password"
+                          disabled={loading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Confirm password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Re-enter password"
+                        value={formData.confirmPassword}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
+                        className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition ${
+                          passwordsMatch
+                            ? "border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+                            : "border-slate-300 focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600"
+                        }`}
+                        required
+                        autoComplete="new-password"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password Strength Indicator */}
+                  {formData.password.length > 0 && (
+                    <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-medium">Password strength:</span>
+                        <span
+                          className={`font-bold ${
+                            passwordScore === 3
+                              ? "text-emerald-600"
+                              : passwordScore === 2
+                              ? "text-amber-600"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {passwordScore === 3
+                            ? "Strong"
+                            : passwordScore === 2
+                            ? "Moderate"
+                            : "Weak"}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            passwordScore === 3
+                              ? "w-full bg-emerald-500"
+                              : passwordScore === 2
+                              ? "w-2/3 bg-amber-500"
+                              : "w-1/3 bg-red-500"
+                          }`}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-slate-400 pt-0.5">
+                        <span className={passwordCriteria.length ? "text-emerald-600 flex items-center gap-0.5" : ""}>
+                          {passwordCriteria.length && <Check className="w-3 h-3 inline" />} 8+ chars
+                        </span>
+                        <span className={passwordCriteria.hasLetter ? "text-emerald-600 flex items-center gap-0.5" : ""}>
+                          {passwordCriteria.hasLetter && <Check className="w-3 h-3 inline" />} Letters
+                        </span>
+                        <span className={passwordCriteria.hasDigitOrSpecial ? "text-emerald-600 flex items-center gap-0.5" : ""}>
+                          {passwordCriteria.hasDigitOrSpecial && <Check className="w-3 h-3 inline" />} Numbers or symbols
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-amber-50 border border-amber-200/60 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <span>
+                      You are creating the primary <strong>Shop Owner (Admin)</strong> account. Counter staff and sellers are added later from your dashboard.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
                     disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Password Strength Indicator */}
-              {formData.password.length > 0 && (
-                <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Password strength:</span>
-                    <span
-                      className={`font-bold ${
-                        passwordScore === 3
-                          ? "text-emerald-600"
-                          : passwordScore === 2
-                          ? "text-amber-600"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {passwordScore === 3
-                        ? "Strong"
-                        : passwordScore === 2
-                        ? "Moderate"
-                        : "Weak"}
-                    </span>
-                  </div>
-                  <div className="flex gap-1 h-1 w-full bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${
-                        passwordScore === 3
-                          ? "w-full bg-emerald-500"
-                          : passwordScore === 2
-                          ? "w-2/3 bg-amber-500"
-                          : "w-1/3 bg-red-500"
-                      }`}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-slate-400 pt-0.5">
-                    <span className={passwordCriteria.length ? "text-emerald-600 flex items-center gap-0.5" : ""}>
-                      {passwordCriteria.length && <Check className="w-3 h-3 inline" />} 8+ chars
-                    </span>
-                    <span className={passwordCriteria.hasLetter ? "text-emerald-600 flex items-center gap-0.5" : ""}>
-                      {passwordCriteria.hasLetter && <Check className="w-3 h-3 inline" />} Letters
-                    </span>
-                    <span className={passwordCriteria.hasDigitOrSpecial ? "text-emerald-600 flex items-center gap-0.5" : ""}>
-                      {passwordCriteria.hasDigitOrSpecial && <Check className="w-3 h-3 inline" />} Numbers or symbols
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Account Role Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Select Account Role
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, role: "OWNER" })
-                    }
-                    className={`py-3 px-3.5 rounded-xl border text-left transition flex flex-col justify-between ${
-                      formData.role === "OWNER"
-                        ? "bg-amber-50 border-amber-600 text-amber-900 ring-2 ring-amber-600/20"
-                        : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
-                    }`}
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   >
-                    <span className="font-bold text-xs flex items-center gap-1.5">
-                      👑 Shop Owner
-                    </span>
-                    <span className="text-[10px] text-slate-500 mt-1 block">
-                      Full financial insight, P&amp;L reports, buying prices &amp; expenses.
-                    </span>
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <svg
+                          className="animate-spin w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          />
+                        </svg>
+                        Initializing shop workspace...
+                      </span>
+                    ) : (
+                      <>
+                        Initialize Shop &amp; Enter Dashboard <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
+                </form>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, role: "SELLER" })
-                    }
-                    className={`py-3 px-3.5 rounded-xl border text-left transition flex flex-col justify-between ${
-                      formData.role === "SELLER"
-                        ? "bg-amber-50 border-amber-600 text-amber-900 ring-2 ring-amber-600/20"
-                        : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
-                    }`}
+                <p className="text-center text-sm text-slate-500">
+                  Already have an account?{" "}
+                  <Link
+                    href="/login"
+                    className="text-amber-700 hover:text-amber-800 font-bold transition"
                   >
-                    <span className="font-bold text-xs flex items-center gap-1.5">
-                      🏷️ Counter Seller
-                    </span>
-                    <span className="text-[10px] text-slate-500 mt-1 block">
-                      POS counter sales, stock lookup, receipt printing. Zero financial insight.
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="animate-spin w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      />
-                    </svg>
-                    Creating account in SQL Server...
-                  </span>
-                ) : (
-                  <>
-                    Create account &amp; Enter workspace <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-slate-500">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-amber-700 hover:text-amber-800 font-bold transition"
-              >
-                Sign in
-              </Link>
-            </p>
+                    Sign in
+                  </Link>
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -449,18 +466,18 @@ export default function RegisterPage() {
                 <UserPlus className="w-5 h-5 text-amber-400" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-bold text-white">Instant Setup</p>
+                <p className="text-sm font-bold text-white">Owner Master Key</p>
                 <p className="text-xs text-stone-400">
-                  Real credentials. Zero defaults.
+                  Total control over staff &amp; cash
                 </p>
               </div>
             </div>
 
             <div className="space-y-2.5 mt-4">
               {[
-                { step: "1", text: "Create your unique personal account" },
-                { step: "2", text: "Manage boutique inventory & counter sales" },
-                { step: "3", text: "Track profits in real-time from the ledger" },
+                { step: "1", text: "Create your Owner account" },
+                { step: "2", text: "Add counter staff & cashiers from dashboard" },
+                { step: "3", text: "Deactivate staff or reset PINs at any time" },
               ].map((item) => (
                 <div
                   key={item.step}
