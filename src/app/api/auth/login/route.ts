@@ -23,11 +23,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
+    const role = user.role as "OWNER" | "SELLER";
+
     const token = signToken({
       id: user.id,
       name: user.name,
       username: user.username,
-      role: user.role,
+      role,
     });
 
     return NextResponse.json({
@@ -36,11 +38,10 @@ export async function POST(req: Request) {
         id: user.id,
         name: user.name,
         username: user.username,
-        role: user.role,
+        role,
       },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Login failed" }, { status: 500 });
   }
 }
-
