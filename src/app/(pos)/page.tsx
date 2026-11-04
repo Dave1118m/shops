@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ShoppingBag,
   Search,
@@ -10,9 +11,11 @@ import {
   Trash2,
   Printer,
   CheckCircle2,
-  ShieldAlert,
   ArrowLeft,
   DollarSign,
+  LogOut,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
 interface Variant {
@@ -33,61 +36,6 @@ interface BoutiqueProduct {
   variants: Variant[];
 }
 
-// Sample boutique stock (loaded from SQL Server API)
-const INITIAL_PRODUCTS: BoutiqueProduct[] = [
-  {
-    id: "p1",
-    name: "Silk Floral Wrap Dress",
-    category: "Dresses",
-    code: "DR-001",
-    sellingPrice: 85.0,
-    stock: 14,
-    variants: [
-      { id: "v1-s-red", size: "S", color: "Rose Red", additionalPrice: 0, stock: 4 },
-      { id: "v1-m-red", size: "M", color: "Rose Red", additionalPrice: 0, stock: 5 },
-      { id: "v1-l-blk", size: "L", color: "Noir Black", additionalPrice: 0, stock: 5 },
-    ],
-  },
-  {
-    id: "p2",
-    name: "Linen Button-Down Blouse",
-    category: "Tops & Blouses",
-    code: "TP-002",
-    sellingPrice: 48.0,
-    stock: 20,
-    variants: [
-      { id: "v2-s-wht", size: "S", color: "Ivory White", additionalPrice: 0, stock: 8 },
-      { id: "v2-m-wht", size: "M", color: "Ivory White", additionalPrice: 0, stock: 7 },
-      { id: "v2-l-blu", size: "L", color: "Sky Blue", additionalPrice: 0, stock: 5 },
-    ],
-  },
-  {
-    id: "p3",
-    name: "High-Waist Tailored Trousers",
-    category: "Pants & Skirts",
-    code: "TR-003",
-    sellingPrice: 65.0,
-    stock: 9,
-    variants: [
-      { id: "v3-36-blk", size: "36", color: "Classic Black", additionalPrice: 0, stock: 3 },
-      { id: "v3-38-blk", size: "38", color: "Classic Black", additionalPrice: 0, stock: 4 },
-      { id: "v3-40-cml", size: "40", color: "Camel Tan", additionalPrice: 0, stock: 2 },
-    ],
-  },
-  {
-    id: "p4",
-    name: "Italian Leather Shoulder Bag",
-    category: "Accessories",
-    code: "AC-004",
-    sellingPrice: 120.0,
-    stock: 6,
-    variants: [
-      { id: "v4-std-tan", size: "One Size", color: "Cognac Tan", additionalPrice: 0, stock: 4 },
-      { id: "v4-std-blk", size: "One Size", color: "Black", additionalPrice: 0, stock: 2 },
-    ],
-  },
-];
-
 interface CartLine {
   productId: string;
   variantId?: string;
@@ -98,25 +46,94 @@ interface CartLine {
   maxStock: number;
 }
 
+interface CompletedSaleData {
+  receiptNo: string;
+  total: number;
+  date: string;
+  sellerName: string;
+  lines: CartLine[];
+}
+
 export default function PosPage() {
-  const [products] = useState<BoutiqueProduct[]>(INITIAL_PRODUCTS);
+  const router = useRouter();
+  const [user, setUser] = useState<{ id: string; name: string; username: string; role: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  const [products, setProducts] = useState<BoutiqueProduct[]>([]);
+  const [categories, setCategories] = useState<string[]>(["ALL"]);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [completedSale, setCompletedSale] = useState<{
-    receiptNo: string;
-    total: number;
-    lines: CartLine[];
-    date: string;
-  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const categories = ["ALL", ...Array.from(new Set(products.map((p) => p.category)))];
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [completedSale, setCompletedSale] = useState<CompletedSaleData | null>(null);
+
+  // 1. Authenticate user & load products
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedToken || !storedUser) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setToken(storedToken);
+      loadCatalog(storedToken);
+    } catch {
+      router.push("/login");
+    }
+  }, [router]);
+
+  const loadCatalog = async (authToken: string) => {
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      const res = await fetch("/api/items", {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        throw new Error("Failed to load inventory from database.");
+      }
+
+      const data = await res.json();
+      const items: BoutiqueProduct[] = data.items || [];
+      setProducts(items);
+
+      // Extract unique categories
+      const uniqueCats = ["ALL", ...Array.from(new Set(items.map((i) => i.category).filter(Boolean)))];
+      setCategories(uniqueCats);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to connect to database.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategory === "ALL" || p.category === selectedCategory;
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesCat && matchesSearch;
   });
 
@@ -124,7 +141,6 @@ export default function PosPage() {
     const maxStock = variant ? variant.stock : product.stock;
     if (maxStock <= 0) return;
 
-    const lineId = variant ? `${product.id}-${variant.id}` : product.id;
     const existingIndex = cart.findIndex(
       (c) => c.productId === product.id && c.variantId === variant?.id
     );
@@ -141,7 +157,7 @@ export default function PosPage() {
           productId: product.id,
           variantId: variant?.id,
           name: product.name,
-          variantDesc: variant ? `Size: ${variant.size} • ${variant.color}` : undefined,
+          variantDesc: variant ? `Size: ${variant.size} • Color: ${variant.color}` : undefined,
           price: product.sellingPrice + (variant?.additionalPrice || 0),
           qty: 1,
           maxStock,
@@ -167,16 +183,57 @@ export default function PosPage() {
 
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
-    const receiptNo = `REC-${Date.now().toString().slice(-6)}`;
-    setCompletedSale({
-      receiptNo,
-      total: totalAmount,
-      lines: [...cart],
-      date: new Date().toLocaleString(),
-    });
-    setCart([]);
+  const handleCheckout = async () => {
+    if (cart.length === 0 || !user || !token) return;
+
+    try {
+      setCheckoutLoading(true);
+      setErrorMessage("");
+
+      const payload = {
+        sellerId: user.id,
+        lines: cart.map((line) => ({
+          itemId: line.productId,
+          variantId: line.variantId || null,
+          quantity: line.qty,
+        })),
+        discountAmount: 0,
+      };
+
+      const res = await fetch("/api/sales/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Sale checkout failed.");
+      }
+
+      // Record completed sale for receipt
+      setCompletedSale({
+        receiptNo: data.sale.receiptNo,
+        total: Number(data.sale.totalAmount),
+        date: new Date(data.sale.date || Date.now()).toLocaleString(),
+        sellerName: user.name,
+        lines: [...cart],
+      });
+
+      // Clear cart
+      setCart([]);
+
+      // Reload real inventory stock immediately from DB
+      await loadCatalog(token);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to process checkout transaction.");
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   return (
@@ -196,19 +253,46 @@ export default function PosPage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-900">Elegance Boutique POS</h1>
-              <p className="text-xs text-slate-400">Seller Terminal • Counter 1</p>
+              <p className="text-xs text-slate-400">Seller Terminal • Live SQL Server Ledger</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => token && loadCatalog(token)}
+            title="Refresh Stock"
+            className="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+
           <div className="text-right">
             <span className="text-xs text-slate-400 block">Logged in as</span>
-            <span className="text-sm font-semibold text-slate-800">Sarah (Seller)</span>
+            <span className="text-sm font-semibold text-slate-800">
+              {user ? `${user.name} (${user.role})` : "Loading..."}
+            </span>
           </div>
+
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg transition"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
+
+      {/* Error banner if any */}
+      {errorMessage && (
+        <div className="bg-red-50 border-b border-red-200 px-6 py-2 flex items-center gap-2 text-xs text-red-700 font-medium">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
@@ -232,11 +316,10 @@ export default function PosPage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                    selectedCategory === cat
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${selectedCategory === cat
                       ? "bg-rose-600 text-white shadow-sm"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -245,60 +328,102 @@ export default function PosPage() {
           </div>
 
           {/* Product Grid */}
-          <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-1">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col justify-between hover:border-slate-300 transition shadow-sm"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-                      {product.category}
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                      {product.code}
-                    </span>
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center text-slate-400">
+              <RefreshCw className="w-6 h-6 animate-spin mr-2 text-rose-500" />
+              <span className="text-sm font-medium">Loading live boutique inventory...</span>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+              <ShoppingBag className="w-12 h-12 stroke-[1.5] mb-2 text-slate-300" />
+              <p className="text-sm font-semibold text-slate-600">No products found</p>
+              <p className="text-xs text-slate-400 mt-1">Check search term or select another category.</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-1">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col justify-between hover:border-slate-300 transition shadow-sm"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+                        {product.category}
+                      </span>
+                      {product.code && (
+                        <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {product.code}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-slate-900 text-sm leading-snug">{product.name}</h3>
+                    <div className="mt-2 flex items-baseline justify-between">
+                      <span className="text-base font-bold text-slate-900">
+                        ${product.sellingPrice.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        Total Stock:{" "}
+                        <strong
+                          className={
+                            product.stock <= 3
+                              ? "text-red-600 font-bold"
+                              : "text-slate-800"
+                          }
+                        >
+                          {product.stock}
+                        </strong>
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-slate-900 text-sm leading-snug">{product.name}</h3>
-                  <div className="mt-2 flex items-baseline justify-between">
-                    <span className="text-base font-bold text-slate-900">
-                      ${product.sellingPrice.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      Total Stock: <strong className="text-slate-800">{product.stock}</strong>
-                    </span>
-                  </div>
-                </div>
 
-                {/* Variants Selection */}
-                <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Select Variant:</span>
-                  <div className="grid grid-cols-1 gap-1">
-                    {product.variants.map((v) => (
-                      <button
-                        key={v.id}
-                        disabled={v.stock <= 0}
-                        onClick={() => addToCart(product, v)}
-                        className={`w-full flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg border transition ${
-                          v.stock <= 0
-                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                            : "bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border-slate-200 hover:border-rose-300 font-medium"
-                        }`}
-                      >
-                        <span>
-                          {v.size} ({v.color})
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          {v.stock > 0 ? `${v.stock} in stock` : "Out of stock"}
-                        </span>
-                      </button>
-                    ))}
+                  {/* Variants Selection */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                    <span className="text-[11px] font-semibold text-slate-400 block">
+                      {product.variants.length > 0 ? "Select Variant:" : "Standard Item:"}
+                    </span>
+                    <div className="grid grid-cols-1 gap-1">
+                      {product.variants.length > 0 ? (
+                        product.variants.map((v) => (
+                          <button
+                            key={v.id}
+                            disabled={v.stock <= 0}
+                            onClick={() => addToCart(product, v)}
+                            className={`w-full flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg border transition ${v.stock <= 0
+                                ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                                : "bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border-slate-200 hover:border-rose-300 font-medium"
+                              }`}
+                          >
+                            <span>
+                              {v.size} ({v.color})
+                              {v.additionalPrice > 0 && ` +$${v.additionalPrice.toFixed(2)}`}
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              {v.stock > 0 ? `${v.stock} in stock` : "Out of stock"}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <button
+                          disabled={product.stock <= 0}
+                          onClick={() => addToCart(product)}
+                          className={`w-full flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg border transition ${product.stock <= 0
+                              ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                              : "bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border-slate-200 hover:border-rose-300 font-medium"
+                            }`}
+                        >
+                          <span>Standard</span>
+                          <span className="text-[11px] text-slate-500">
+                            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Right: Cart & Fast Checkout */}
@@ -325,7 +450,7 @@ export default function PosPage() {
             ) : (
               cart.map((line, index) => (
                 <div
-                  key={`${line.productId}-${line.variantId}`}
+                  key={`${line.productId}-${line.variantId || "std"}`}
                   className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2"
                 >
                   <div className="flex items-start justify-between">
@@ -357,11 +482,10 @@ export default function PosPage() {
                       <button
                         onClick={() => updateQty(index, 1)}
                         disabled={line.qty >= line.maxStock}
-                        className={`w-6 h-6 flex items-center justify-center rounded ${
-                          line.qty >= line.maxStock
+                        className={`w-6 h-6 flex items-center justify-center rounded ${line.qty >= line.maxStock
                             ? "text-slate-300 cursor-not-allowed"
                             : "hover:bg-slate-100 text-slate-600"
-                        }`}
+                          }`}
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -395,15 +519,22 @@ export default function PosPage() {
             </div>
 
             <button
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || checkoutLoading}
               onClick={handleCheckout}
-              className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition ${
-                cart.length === 0
+              className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition ${cart.length === 0 || checkoutLoading
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 active:scale-[0.99]"
-              }`}
+                }`}
             >
-              <DollarSign className="w-5 h-5" /> Complete Sale & Print Receipt
+              {checkoutLoading ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Recording Sale in Ledger...
+                </span>
+              ) : (
+                <>
+                  <DollarSign className="w-5 h-5" /> Complete Sale & Print Receipt
+                </>
+              )}
             </button>
           </div>
         </aside>
@@ -423,7 +554,7 @@ export default function PosPage() {
                   Receipt No: <strong className="text-slate-800">{completedSale.receiptNo}</strong>
                 </p>
                 <p>Date: {completedSale.date}</p>
-                <p>Seller: Sarah</p>
+                <p>Seller: {completedSale.sellerName}</p>
               </div>
             </div>
 
@@ -455,7 +586,7 @@ export default function PosPage() {
               Thank you for visiting Elegance Boutique! Goods once sold cannot be returned without receipt.
             </p>
 
-            <div className="mt-5 grid grid-cols-2 gap-2">
+            <div className="mt-5 grid grid-cols-2 gap-2 no-print">
               <button
                 onClick={() => window.print()}
                 className="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition"
@@ -475,4 +606,3 @@ export default function PosPage() {
     </div>
   );
 }
-
