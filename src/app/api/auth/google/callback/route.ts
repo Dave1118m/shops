@@ -144,3 +144,4 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${appUrl}/login?error=Unexpected error during Google authentication.`);
   }
 }
+

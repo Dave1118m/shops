@@ -12,9 +12,9 @@ import {
   Check,
   Lock,
   RefreshCw,
-  Database,
-  Shield,
-  CheckCircle2,
+  ShoppingBag,
+  Sparkles,
+  Tag,
 } from "lucide-react";
 
 function RegisterContent() {
@@ -155,30 +155,27 @@ function RegisterContent() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Side - Register Form */}
-      <div className="w-full lg:w-[52%] bg-white flex flex-col justify-between">
+      {/* Left Side - Clean Form */}
+      <div className="w-full lg:w-[50%] bg-white flex flex-col justify-between">
         {/* Top Header */}
         <header className="px-8 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              S
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center text-white shadow-sm">
+              <ShoppingBag className="w-5 h-5 text-amber-100" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-none">
-                SOLEIL
+              <h1 className="text-base font-extrabold text-slate-900 tracking-tight leading-none">
+                Boutique POS &amp; Stock
               </h1>
-              <span className="text-[10px] font-medium text-slate-400 tracking-[0.2em] uppercase">
-                Commerce
+              <span className="text-[11px] font-medium text-slate-400">
+                Money &amp; Inventory Control
               </span>
             </div>
           </div>
-          <span className="text-xs text-slate-400 font-medium">
-            Shop Management System
-          </span>
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-24 py-8">
+        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-20 py-8">
           <div className="w-full max-w-md space-y-6">
             {checkingStatus ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400">
@@ -211,17 +208,14 @@ function RegisterContent() {
                 </Link>
               </div>
             ) : (
-              /* Initial Shop Owner Account Setup */
+              /* Shop Owner Account Setup */
               <>
                 <div>
-                  <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-2">
-                    Initial Setup
-                  </p>
-                  <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+                  <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
                     Create Owner Account
                   </h2>
                   <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                    Register the primary Owner account to access your boutique inventory and cash drawer.
+                    Set up your credentials to manage boutique inventory, counter sales, and finances.
                   </p>
                 </div>
 
@@ -263,7 +257,7 @@ function RegisterContent() {
                 <div className="relative flex items-center justify-center">
                   <div className="border-t border-slate-200 w-full" />
                   <span className="bg-white px-3 text-xs text-slate-400 uppercase tracking-wider font-medium">
-                    or create with email
+                    or register with email
                   </span>
                   <div className="border-t border-slate-200 w-full" />
                 </div>
@@ -431,13 +425,6 @@ function RegisterContent() {
                     </div>
                   )}
 
-                  <div className="p-3 bg-amber-50 border border-amber-200/60 rounded-xl text-xs text-amber-900 flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                    <span>
-                      This creates the primary <strong>Shop Owner (Admin)</strong> account. Counter sellers are added from your dashboard.
-                    </span>
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading}
@@ -464,11 +451,11 @@ function RegisterContent() {
                             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                           />
                         </svg>
-                        Initializing workspace...
+                        Creating Owner Account...
                       </span>
                     ) : (
                       <>
-                        Create Owner Account <ArrowRight className="w-4 h-4" />
+                        Create Account &amp; Access Dashboard <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -495,44 +482,97 @@ function RegisterContent() {
         </footer>
       </div>
 
-      {/* Right Side - Dark Branded Clean Panel */}
-      <div className="hidden lg:flex lg:w-[48%] bg-gradient-to-br from-stone-900 via-stone-950 to-black flex-col items-center justify-center p-12 relative overflow-hidden">
-        {/* Background accent */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-800/10 rounded-full blur-[100px]" />
+      {/* Right Side - Dark Boutique Showcase Panel */}
+      <div className="hidden lg:flex lg:w-[50%] bg-gradient-to-br from-stone-900 via-stone-950 to-black flex-col items-center justify-center p-10 relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-900/15 rounded-full blur-[130px]" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-rose-900/10 rounded-full blur-[110px]" />
 
-        <div className="relative z-10 text-center space-y-8 max-w-md w-full">
-          <div className="bg-stone-800/50 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-6 text-left space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2 pb-3 border-b border-stone-700/50">
-              <Shield className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                Enterprise Shop Security
-              </span>
+        <div className="relative z-10 max-w-md w-full space-y-6">
+          {/* Header */}
+          <div className="text-left space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/40 text-amber-300 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Boutique Inventory &amp; POS
+            </div>
+            <h3 className="text-2xl font-extrabold text-white tracking-tight">
+              Track Every Garment, Pair &amp; Cent.
+            </h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Purpose-built for clothing boutiques, luxury apparel, footwear, and accessory stores.
+            </p>
+          </div>
+
+          {/* Boutique Material Cards */}
+          <div className="space-y-3">
+            {/* Card 1: Dresses & Apparel */}
+            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-rose-950/80 border border-rose-800/40 flex items-center justify-center text-xl shadow-inner">
+                  👗
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-white">Apparel &amp; Dresses</h4>
+                    <span className="text-[10px] font-semibold text-rose-300 bg-rose-950/80 px-1.5 py-0.5 rounded">
+                      Sizes &amp; Colors
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    Multi-variant stock: XS, S, M, L, XL with colorways
+                  </p>
+                </div>
+              </div>
+              <Tag className="w-4 h-4 text-stone-500" />
             </div>
 
-            <div className="space-y-3 text-xs text-stone-300">
-              <div className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Single Master Owner account setup per boutique shop.</span>
+            {/* Card 2: Footwear & Shoes */}
+            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-amber-950/80 border border-amber-800/40 flex items-center justify-center text-xl shadow-inner">
+                  👠
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-white">Footwear &amp; Heels</h4>
+                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded">
+                      Shoe Sizes
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    EU sizes 36 to 43, heel heights, and box barcode tracking
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Google OAuth 2.0 and encrypted password credentials supported.</span>
+              <Tag className="w-4 h-4 text-stone-500" />
+            </div>
+
+            {/* Card 3: Bags & Accessories */}
+            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-purple-800/40 flex items-center justify-center text-xl shadow-inner">
+                  👜
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-white">Bags &amp; Leather Goods</h4>
+                    <span className="text-[10px] font-semibold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded">
+                      Weighted Cost
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    Handcrafted accessories, unit costs, and profit margin analysis
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Sellers managed and activated directly by the shop owner.</span>
-              </div>
+              <Tag className="w-4 h-4 text-stone-500" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300">
-              Money &amp; Stock Control
-            </h3>
-            <p className="text-xs text-stone-500 font-medium tracking-wider uppercase">
-              Boutique Commerce Engine
-            </p>
+          {/* Footer Highlights */}
+          <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between text-[11px] text-stone-400 font-medium">
+            <span>✓ Fast Counter POS Sales</span>
+            <span>✓ Real-time P&amp;L Statements</span>
+            <span>✓ Zero Manual Overrides</span>
           </div>
         </div>
       </div>
