@@ -1,12 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  AlertCircle,
+  Database,
+  Lock,
+  Layers,
+} from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -17,6 +28,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isLockedOut, setIsLockedOut] = useState(false);
 
+  useEffect(() => {
+    const errorFromQuery = searchParams.get("error");
+    if (errorFromQuery) {
+      setError(errorFromQuery);
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLockedOut) return;
@@ -25,7 +43,7 @@ export default function LoginPage() {
 
     const identifier = formData.username.trim();
     if (!identifier || !formData.password) {
-      setError("Please enter your username or email address and password.");
+      setError("Please enter your email or username, and password.");
       return;
     }
 
@@ -47,12 +65,11 @@ export default function LoginPage() {
         if (res.status === 429) {
           setIsLockedOut(true);
         }
-        setError(data.error || "Authentication failed. Please verify your credentials.");
+        setError(data.error || "Invalid username/email or password.");
         setLoading(false);
         return;
       }
 
-      // Store authenticated session
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
@@ -60,16 +77,19 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      // Redirect based on role
       if (data.user.role === "OWNER") {
         router.push("/dashboard");
       } else {
         router.push("/pos");
       }
     } catch {
-      setError("Network error. Unable to connect to the authentication server.");
+      setError("Network error. Unable to connect to the authentication service.");
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -92,22 +112,22 @@ export default function LoginPage() {
             </div>
           </div>
           <span className="text-xs text-slate-400 font-medium">
-            Secure shop management
+            Shop Management System
           </span>
         </header>
 
         {/* Form Area */}
         <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-24 py-8">
-          <div className="w-full max-w-md space-y-8">
+          <div className="w-full max-w-md space-y-6">
             <div>
-              <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-3">
-                Control. Clarity. Growth.
+              <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-2">
+                Authentication
               </p>
-              <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
                 Welcome back.
               </h2>
-              <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                Sign in to see exactly where your stock and money stand today.
+              <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
+                Sign in with your email, username, or Google account to access your workspace.
               </p>
             </div>
 
@@ -118,19 +138,55 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Google Single Sign-On Button */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full py-3 px-4 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-3"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.37 7.34 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.17 0 9.97 0 12s.46 3.83 1.26 5.42l4.02-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+
+            {/* Divider */}
+            <div className="relative flex items-center justify-center">
+              <div className="border-t border-slate-200 w-full" />
+              <span className="bg-white px-3 text-xs text-slate-400 uppercase tracking-wider font-medium">
+                or sign in with password
+              </span>
+              <div className="border-t border-slate-200 w-full" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Email or Username
                 </label>
                 <input
                   type="text"
-                  placeholder="yourname@soleil.shop or username"
+                  placeholder="Enter your email or username"
                   value={formData.username}
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
                   required
                   autoFocus
                   autoComplete="username"
@@ -139,18 +195,18 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Password
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••••"
+                    placeholder="Enter your password"
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition pr-12"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition pr-12"
                     required
                     autoComplete="current-password"
                     disabled={loading || isLockedOut}
@@ -188,7 +244,7 @@ export default function LoginPage() {
                   </span>
                 </label>
                 <span className="text-xs text-slate-400">
-                  Self-service portal
+                  Secure session
                 </span>
               </div>
 
@@ -218,7 +274,7 @@ export default function LoginPage() {
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                       />
                     </svg>
-                    Verifying credentials...
+                    Signing in...
                   </span>
                 ) : (
                   <>
@@ -229,7 +285,7 @@ export default function LoginPage() {
             </form>
 
             <p className="text-center text-sm text-slate-500">
-              New to Soleil?{" "}
+              New shop setup?{" "}
               <Link
                 href="/register"
                 className="text-amber-700 hover:text-amber-800 font-bold transition"
@@ -243,85 +299,78 @@ export default function LoginPage() {
         {/* Footer */}
         <footer className="px-8 py-5 flex items-center justify-center gap-2 text-[11px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Protected by enterprise-grade bcrypt &amp; TLS encryption</span>
-          <span className="mx-1">·</span>
-          <span>v2.0</span>
+          <span>Protected by enterprise-grade encryption &amp; audit ledger</span>
         </footer>
       </div>
 
-      {/* Right Side - Dark Branded Panel */}
+      {/* Right Side - Dark Branded System Architecture Panel (No Mock Numbers) */}
       <div className="hidden lg:flex lg:w-[48%] bg-gradient-to-br from-stone-900 via-stone-950 to-black flex-col items-center justify-center p-12 relative overflow-hidden">
         {/* Background accent */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-800/10 rounded-full blur-[100px]" />
 
-        <div className="relative z-10 text-center space-y-10 max-w-lg">
-          {/* Live Profit Card */}
-          <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-6 shadow-2xl max-w-xs mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs text-stone-400 font-medium">
-                Today&apos;s net profit
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[11px] text-emerald-400 font-semibold">
-                  Live
-                </span>
-              </div>
-            </div>
-            <p className="text-3xl font-extrabold text-white tracking-tight">
-              $2,480.50
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <svg
-                className="w-3.5 h-3.5 text-emerald-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2 20l5.5-5.5L11 18l9-11"
-                />
-              </svg>
-              <span className="text-xs text-emerald-400 font-semibold">
-                18.4% from yesterday
+        <div className="relative z-10 text-center space-y-8 max-w-md w-full">
+          {/* Real System Architecture Highlights */}
+          <div className="bg-stone-800/50 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-6 text-left space-y-4 shadow-2xl">
+            <div className="flex items-center gap-2 pb-3 border-b border-stone-700/50">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                System Status • Online
               </span>
             </div>
 
-            {/* Mini bar chart */}
-            <div className="flex items-end gap-1.5 mt-6 h-16 justify-center">
-              {[35, 45, 30, 55, 40, 65, 50, 80, 70, 95].map((h, i) => (
-                <div
-                  key={i}
-                  className="w-3 rounded-sm"
-                  style={{
-                    height: `${h}%`,
-                    backgroundColor:
-                      i >= 7
-                        ? "rgb(180, 140, 80)"
-                        : "rgba(180, 140, 80, 0.35)",
-                  }}
-                />
-              ))}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 bg-stone-900/40 p-3 rounded-xl border border-stone-700/30">
+                <Database className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-white">Immutable Ledger</h4>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    Stock and cash movements are recorded strictly via append-only ledger entries.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-stone-900/40 p-3 rounded-xl border border-stone-700/30">
+                <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-white">Role-Based Access</h4>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    Sellers access POS sales only. Buying prices and profit metrics remain confidential to the Owner.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-stone-900/40 p-3 rounded-xl border border-stone-700/30">
+                <Layers className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-white">Weighted Average Costing</h4>
+                  <p className="text-[11px] text-stone-400 mt-0.5">
+                    Accurate profit margins calculated automatically upon incoming purchase restocks.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Motivational Quote */}
-          <div className="space-y-4">
-            <h3 className="text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 leading-tight">
-              &ldquo;What gets measured,
-              <br />
-              gets mastered.&rdquo;
+          {/* Clean Brand Tagline */}
+          <div className="space-y-2">
+            <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300">
+              Money &amp; Stock Control
             </h3>
-            <p className="text-xs font-bold text-stone-500 tracking-[0.25em] uppercase">
-              Every product. Every sale. Every cent.
+            <p className="text-xs text-stone-500 font-medium tracking-wider uppercase">
+              Boutique Commerce Engine
             </p>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-xs text-slate-400">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
