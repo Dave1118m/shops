@@ -46,7 +46,7 @@ function RegisterContent() {
       .then((data) => {
         setIsShopInitialized(!!data.initialized);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         setCheckingStatus(false);
       });
@@ -174,8 +174,8 @@ function RegisterContent() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-20 py-8">
-          <div className="w-full max-w-md space-y-6">
+        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-20 py-6">
+          <div className="w-full max-w-md space-y-4">
             {checkingStatus ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400">
                 <RefreshCw className="w-6 h-6 animate-spin text-amber-700 mb-2" />
@@ -183,7 +183,7 @@ function RegisterContent() {
               </div>
             ) : isShopInitialized ? (
               /* Public Registration Locked - Shop Already Has an Owner */
-              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 text-center space-y-5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 text-center space-y-4">
                 <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
                   <Lock className="w-6 h-6" />
                 </div>
@@ -201,7 +201,7 @@ function RegisterContent() {
 
                 <Link
                   href="/login"
-                  className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition"
+                  className="w-full py-3 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition"
                 >
                   Sign in to workspace <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -210,10 +210,10 @@ function RegisterContent() {
               /* Shop Owner Account Setup */
               <>
                 <div>
-                  <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                     Create Owner Account
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
                     Set up your credentials to manage boutique inventory, counter sales, and finances.
                   </p>
                 </div>
@@ -229,7 +229,7 @@ function RegisterContent() {
                 <button
                   type="button"
                   onClick={handleGoogleSignUp}
-                  className="w-full py-3 px-4 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-3"
+                  className="w-full py-2.5 px-4 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-3"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
@@ -252,10 +252,10 @@ function RegisterContent() {
                   <span>Sign up with Google</span>
                 </button>
 
-                {/* Divider */}
-                <div className="relative flex items-center justify-center">
+                {/* Divider - strictly horizontal with whitespace-nowrap */}
+                <div className="relative flex items-center justify-center my-0.5">
                   <div className="border-t border-slate-200 w-full" />
-                  <span className="bg-white px-3 text-xs text-slate-400 uppercase tracking-wider font-medium">
+                  <span className="bg-white px-3 text-[11px] text-slate-400 uppercase tracking-wider font-medium whitespace-nowrap shrink-0">
                     or register with email
                   </span>
                   <div className="border-t border-slate-200 w-full" />
@@ -366,11 +366,10 @@ function RegisterContent() {
                             confirmPassword: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition ${
-                          passwordsMatch
+                        className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition ${passwordsMatch
                             ? "border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
                             : "border-slate-300 focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600"
-                        }`}
+                          }`}
                         required
                         autoComplete="new-password"
                         disabled={loading}
@@ -384,30 +383,28 @@ function RegisterContent() {
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 font-medium">Password strength:</span>
                         <span
-                          className={`font-bold ${
-                            passwordScore === 3
+                          className={`font-bold ${passwordScore === 3
                               ? "text-emerald-600"
                               : passwordScore === 2
-                              ? "text-amber-600"
-                              : "text-red-500"
-                          }`}
+                                ? "text-amber-600"
+                                : "text-red-500"
+                            }`}
                         >
                           {passwordScore === 3
                             ? "Strong"
                             : passwordScore === 2
-                            ? "Moderate"
-                            : "Weak"}
+                              ? "Moderate"
+                              : "Weak"}
                         </span>
                       </div>
                       <div className="flex gap-1 h-1 w-full bg-slate-200 rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all ${
-                            passwordScore === 3
+                          className={`h-full transition-all ${passwordScore === 3
                               ? "w-full bg-emerald-500"
                               : passwordScore === 2
-                              ? "w-2/3 bg-amber-500"
-                              : "w-1/3 bg-red-500"
-                          }`}
+                                ? "w-2/3 bg-amber-500"
+                                : "w-1/3 bg-red-500"
+                            }`}
                         />
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-slate-400 pt-0.5">
@@ -427,7 +424,7 @@ function RegisterContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                    className="w-full py-3 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed mt-1"
                   >
                     {loading ? (
                       <span className="flex items-center gap-2">
@@ -450,12 +447,10 @@ function RegisterContent() {
                             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                           />
                         </svg>
-                        Creating Owner Account...
+                        Creating Account...
                       </span>
                     ) : (
-                      <>
-                        Create Account &amp; Access Dashboard <ArrowRight className="w-4 h-4" />
-                      </>
+                      "Create Account"
                     )}
                   </button>
                 </form>

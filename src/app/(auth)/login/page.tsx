@@ -159,9 +159,9 @@ function LoginForm() {
             </button>
 
             {/* Divider */}
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex items-center justify-center my-0.5">
               <div className="border-t border-slate-200 w-full" />
-              <span className="bg-white px-3 text-xs text-slate-400 uppercase tracking-wider font-medium">
+              <span className="bg-white px-3 text-[11px] text-slate-400 uppercase tracking-wider font-medium whitespace-nowrap shrink-0">
                 or sign in with password
               </span>
               <div className="border-t border-slate-200 w-full" />
