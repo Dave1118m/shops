@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,10 +15,20 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isLockedOut, setIsLockedOut] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLockedOut) return;
+
     setError("");
+
+    const identifier = formData.username.trim();
+    if (!identifier || !formData.password) {
+      setError("Please enter your username or email address and password.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -26,7 +36,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: formData.username,
+          username: identifier,
           password: formData.password,
         }),
       });
@@ -34,14 +44,21 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed.");
+        if (res.status === 429) {
+          setIsLockedOut(true);
+        }
+        setError(data.error || "Authentication failed. Please verify your credentials.");
         setLoading(false);
         return;
       }
 
-      // Store token and user data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Store authenticated session
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
 
       // Redirect based on role
       if (data.user.role === "OWNER") {
@@ -49,8 +66,8 @@ export default function LoginPage() {
       } else {
         router.push("/pos");
       }
-    } catch (err) {
-      setError("Network error. Please try again.");
+    } catch {
+      setError("Network error. Unable to connect to the authentication server.");
       setLoading(false);
     }
   };
@@ -58,7 +75,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Login Form */}
-      <div className="w-full lg:w-[52%] bg-white flex flex-col">
+      <div className="w-full lg:w-[52%] bg-white flex flex-col justify-between">
         {/* Top Header */}
         <header className="px-8 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -80,7 +97,7 @@ export default function LoginPage() {
         </header>
 
         {/* Form Area */}
-        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-24">
+        <div className="flex-1 flex items-center justify-center px-8 lg:px-16 xl:px-24 py-8">
           <div className="w-full max-w-md space-y-8">
             <div>
               <p className="text-xs font-bold text-amber-700 tracking-[0.2em] uppercase mb-3">
@@ -95,19 +112,20 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
-                {error}
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <span className="leading-snug">{error}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Email address
+                  Email or Username
                 </label>
                 <input
                   type="text"
-                  placeholder="owner@soleil.shop"
+                  placeholder="yourname@soleil.shop or username"
                   value={formData.username}
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
@@ -115,6 +133,8 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition"
                   required
                   autoFocus
+                  autoComplete="username"
+                  disabled={loading || isLockedOut}
                 />
               </div>
 
@@ -132,11 +152,14 @@ export default function LoginPage() {
                     }
                     className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600/40 focus:border-amber-600 transition pr-12"
                     required
+                    autoComplete="current-password"
+                    disabled={loading || isLockedOut}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -164,17 +187,14 @@ export default function LoginPage() {
                     Keep me signed in
                   </span>
                 </label>
-                <button
-                  type="button"
-                  className="text-xs text-amber-700 hover:text-amber-800 font-semibold transition"
-                >
-                  Forgot password?
-                </button>
+                <span className="text-xs text-slate-400">
+                  Self-service portal
+                </span>
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isLockedOut}
                 className="w-full py-3.5 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -198,7 +218,7 @@ export default function LoginPage() {
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                       />
                     </svg>
-                    Signing in...
+                    Verifying credentials...
                   </span>
                 ) : (
                   <>
@@ -222,8 +242,8 @@ export default function LoginPage() {
 
         {/* Footer */}
         <footer className="px-8 py-5 flex items-center justify-center gap-2 text-[11px] text-slate-400">
-          <ShieldCheck className="w-3 h-3" />
-          <span>Protected by enterprise-grade encryption</span>
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Protected by enterprise-grade bcrypt &amp; TLS encryption</span>
           <span className="mx-1">·</span>
           <span>v2.0</span>
         </footer>
@@ -305,4 +325,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

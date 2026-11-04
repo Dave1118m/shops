@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-for-development-change-me";
+const JWT_SECRET = process.env.JWT_SECRET || "soleil-boutique-enterprise-secret-key-2026-production";
 
 export interface SessionUser {
   id: string;
@@ -10,8 +10,11 @@ export interface SessionUser {
   role: "OWNER" | "SELLER";
 }
 
+/**
+ * Enterprise standard: 12 bcrypt salt rounds
+ */
 export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   return bcrypt.hash(password, salt);
 }
 
@@ -20,14 +23,31 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function signToken(user: SessionUser): string {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: "12h" });
+  return jwt.sign(
+    {
+      sub: user.id,
+      name: user.name,
+      username: user.username,
+      role: user.role,
+    },
+    JWT_SECRET,
+    {
+      expiresIn: "12h",
+      algorithm: "HS256",
+    }
+  );
 }
 
 export function verifyToken(token: string): SessionUser | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as SessionUser;
+    const payload = jwt.verify(token, JWT_SECRET) as any;
+    return {
+      id: payload.sub || payload.id,
+      name: payload.name,
+      username: payload.username,
+      role: payload.role,
+    };
   } catch {
     return null;
   }
 }
-
