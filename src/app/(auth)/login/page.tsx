@@ -10,9 +10,8 @@ import {
   ShieldCheck,
   AlertCircle,
   ShoppingBag,
-  Sparkles,
-  Tag,
 } from "lucide-react";
+import { BoutiqueShowcase } from "@/components/auth/BoutiqueShowcase";
 
 function LoginForm() {
   const router = useRouter();
@@ -294,100 +293,8 @@ function LoginForm() {
         </footer>
       </div>
 
-      {/* Right Side - Dark Boutique Showcase Panel */}
-      <div className="hidden lg:flex lg:w-[50%] bg-gradient-to-br from-stone-900 via-stone-950 to-black flex-col items-center justify-center p-10 relative overflow-hidden">
-        {/* Ambient glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-900/15 rounded-full blur-[130px]" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-rose-900/10 rounded-full blur-[110px]" />
-
-        <div className="relative z-10 max-w-md w-full space-y-6">
-          {/* Header */}
-          <div className="text-left space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/40 text-amber-300 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Boutique Inventory &amp; POS
-            </div>
-            <h3 className="text-2xl font-extrabold text-white tracking-tight">
-              Track Every Garment, Pair &amp; Cent.
-            </h3>
-            <p className="text-xs text-stone-400 leading-relaxed">
-              Purpose-built for clothing boutiques, luxury apparel, footwear, and accessory stores.
-            </p>
-          </div>
-
-          {/* Boutique Material Cards */}
-          <div className="space-y-3">
-            {/* Card 1: Dresses & Apparel */}
-            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-rose-950/80 border border-rose-800/40 flex items-center justify-center text-xl shadow-inner">
-                  👗
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-white">Apparel &amp; Dresses</h4>
-                    <span className="text-[10px] font-semibold text-rose-300 bg-rose-950/80 px-1.5 py-0.5 rounded">
-                      Sizes &amp; Colors
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">
-                    Multi-variant stock: XS, S, M, L, XL with colorways
-                  </p>
-                </div>
-              </div>
-              <Tag className="w-4 h-4 text-stone-500" />
-            </div>
-
-            {/* Card 2: Footwear & Shoes */}
-            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-amber-950/80 border border-amber-800/40 flex items-center justify-center text-xl shadow-inner">
-                  👠
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-white">Footwear &amp; Heels</h4>
-                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded">
-                      Shoe Sizes
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">
-                    EU sizes 36 to 43, heel heights, and box barcode tracking
-                  </p>
-                </div>
-              </div>
-              <Tag className="w-4 h-4 text-stone-500" />
-            </div>
-
-            {/* Card 3: Bags & Accessories */}
-            <div className="bg-stone-800/60 backdrop-blur-sm border border-stone-700/50 rounded-2xl p-4 flex items-center justify-between shadow-xl">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-purple-800/40 flex items-center justify-center text-xl shadow-inner">
-                  👜
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-white">Bags &amp; Leather Goods</h4>
-                    <span className="text-[10px] font-semibold text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded">
-                      Weighted Cost
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">
-                    Handcrafted accessories, unit costs, and profit margin analysis
-                  </p>
-                </div>
-              </div>
-              <Tag className="w-4 h-4 text-stone-500" />
-            </div>
-          </div>
-
-          {/* Footer Highlights */}
-          <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between text-[11px] text-stone-400 font-medium">
-            <span>✓ Fast Counter POS Sales</span>
-            <span>✓ Real-time P&amp;L Statements</span>
-            <span>✓ Zero Manual Overrides</span>
-          </div>
-        </div>
-      </div>
+      {/* Right Side - HD Ecommerce Boutique Showcase Panel */}
+      <BoutiqueShowcase />
     </div>
   );
 }
