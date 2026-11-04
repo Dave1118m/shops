@@ -7,61 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  OWNER
-  SELLER
-}
-
-enum UserStatus {
-  ACTIVE
-  DISABLED
-}
-
-enum SaleStatus {
-  COMPLETED
-  CANCEL_REQUESTED
-  CANCELLED
-}
-
-enum StockMovementType {
-  PURCHASE
-  SALE
-  RETURN
-  WRITE_OFF
-  CORRECTION
-}
-
-enum MoneyDirection {
-  IN
-  OUT
-}
-
-enum MoneyEntryType {
-  SALE
-  PURCHASE
-  EXPENSE
-  OWNER_WITHDRAWAL
-  OWNER_INJECTION
-}
-
-enum ExpenseCategory {
-  RENT
-  SALARY
-  TRANSPORT
-  ELECTRICITY
-  PACKAGING
-  OTHER
-}
-
 model User {
-  id           String      @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  username     String      @unique
+  username     String   @unique
   passwordHash String
-  role         Role        @default(SELLER)
-  status       UserStatus  @default(ACTIVE)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  role         String   @default("SELLER") // "OWNER" | "SELLER"
+  status       String   @default("ACTIVE") // "ACTIVE" | "DISABLED"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   sales          Sale[]
   purchases      Purchase[]
@@ -99,7 +53,7 @@ model Item {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  category       Category        @relation(fields: [categoryId], references: [id])
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   variants       ItemVariant[]
   purchaseLines  PurchaseLine[]
   saleLines      SaleLine[]
@@ -118,7 +72,7 @@ model ItemVariant {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
 
-  item           Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item           Item            @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   purchaseLines  PurchaseLine[]
   saleLines      SaleLine[]
   stockMovements StockMovement[]
@@ -136,7 +90,7 @@ model Purchase {
   userId         String
   createdAt      DateTime       @default(now())
 
-  user  User           @relation(fields: [userId], references: [id])
+  user  User           @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lines PurchaseLine[]
 
   @@map("purchases")
@@ -147,30 +101,30 @@ model PurchaseLine {
   purchaseId String
   itemId     String
   variantId  String?
-  quantity   Decimal  @db.Decimal(18, 2) // Whole piece or decimal for future
+  quantity   Decimal  @db.Decimal(18, 2)
   unitCost   Decimal  @db.Decimal(18, 2)
   totalCost  Decimal  @db.Decimal(18, 2)
 
-  purchase Purchase     @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  item     Item         @relation(fields: [itemId], references: [id])
-  variant  ItemVariant? @relation(fields: [variantId], references: [id])
+  purchase Purchase     @relation(fields: [purchaseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  item     Item         @relation(fields: [itemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variant  ItemVariant? @relation(fields: [variantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("purchase_lines")
 }
 
 model Sale {
-  id             String     @id @default(uuid())
-  receiptNo      String     @unique
-  date           DateTime   @default(now())
+  id             String   @id @default(uuid())
+  receiptNo      String   @unique
+  date           DateTime @default(now())
   sellerId       String
-  status         SaleStatus @default(COMPLETED)
-  discountAmount Decimal    @default(0) @db.Decimal(18, 2)
-  totalAmount    Decimal    @db.Decimal(18, 2)
-  totalCost      Decimal    @default(0) @db.Decimal(18, 2) // COGS snapshot at time of sale
+  status         String   @default("COMPLETED") // "COMPLETED" | "CANCEL_REQUESTED" | "CANCELLED"
+  discountAmount Decimal  @default(0) @db.Decimal(18, 2)
+  totalAmount    Decimal  @db.Decimal(18, 2)
+  totalCost      Decimal  @default(0) @db.Decimal(18, 2) // COGS snapshot at time of sale
   cancelReason   String?
-  createdAt      DateTime   @default(now())
+  createdAt      DateTime @default(now())
 
-  seller User       @relation(fields: [sellerId], references: [id])
+  seller User       @relation(fields: [sellerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lines  SaleLine[]
 
   @@map("sales")
@@ -186,60 +140,60 @@ model SaleLine {
   unitCostAtSale Decimal  @db.Decimal(18, 2) // Cost basis locked at time of sale
   subtotal       Decimal  @db.Decimal(18, 2)
 
-  sale    Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  item    Item         @relation(fields: [itemId], references: [id])
-  variant ItemVariant? @relation(fields: [variantId], references: [id])
+  sale    Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  item    Item         @relation(fields: [itemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variant ItemVariant? @relation(fields: [variantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("sale_lines")
 }
 
 model StockMovement {
-  id        String            @id @default(uuid())
+  id        String   @id @default(uuid())
   itemId    String
   variantId String?
-  quantity  Decimal           @db.Decimal(18, 2) // Positive (+) for in, Negative (-) for out
-  type      StockMovementType
+  quantity  Decimal  @db.Decimal(18, 2) // Positive (+) for in, Negative (-) for out
+  type      String   // "PURCHASE" | "SALE" | "RETURN" | "WRITE_OFF" | "CORRECTION"
   reason    String?
-  refType   String?           // "PURCHASE", "SALE", "RETURN", "AUDIT", "WRITE_OFF"
+  refType   String?  // "PURCHASE" | "SALE" | "RETURN" | "AUDIT" | "WRITE_OFF"
   refId     String?
   userId    String
-  date      DateTime          @default(now())
-  createdAt DateTime          @default(now())
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  item    Item         @relation(fields: [itemId], references: [id])
-  variant ItemVariant? @relation(fields: [variantId], references: [id])
-  user    User         @relation(fields: [userId], references: [id])
+  item    Item         @relation(fields: [itemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variant ItemVariant? @relation(fields: [variantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user    User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("stock_movements")
 }
 
 model Expense {
-  id        String          @id @default(uuid())
-  category  ExpenseCategory
-  amount    Decimal         @db.Decimal(18, 2)
-  date      DateTime        @default(now())
+  id        String   @id @default(uuid())
+  category  String   // "RENT" | "SALARY" | "TRANSPORT" | "ELECTRICITY" | "PACKAGING" | "OTHER"
+  amount    Decimal  @db.Decimal(18, 2)
+  date      DateTime @default(now())
   note      String?
   userId    String
-  createdAt DateTime        @default(now())
+  createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("expenses")
 }
 
 model MoneyEntry {
-  id        String         @id @default(uuid())
-  direction MoneyDirection // IN or OUT
-  amount    Decimal        @db.Decimal(18, 2)
-  type      MoneyEntryType
+  id        String   @id @default(uuid())
+  direction String   // "IN" | "OUT"
+  amount    Decimal  @db.Decimal(18, 2)
+  type      String   // "SALE" | "PURCHASE" | "EXPENSE" | "OWNER_WITHDRAWAL" | "OWNER_INJECTION"
   refType   String?
   refId     String?
   notes     String?
   userId    String
-  date      DateTime       @default(now())
-  createdAt DateTime       @default(now())
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("money_entries")
 }
@@ -255,7 +209,7 @@ model DayClosing {
   closedById   String
   createdAt    DateTime @default(now())
 
-  closedBy User @relation(fields: [closedById], references: [id])
+  closedBy User @relation(fields: [closedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("day_closings")
 }
@@ -269,7 +223,7 @@ model AuditLog {
   details   String?  // JSON string of before/after or reasoning
   timestamp DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("audit_logs")
 }

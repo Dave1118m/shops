@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { generateReceiptNumber } from "@/lib/utils";
-import { StockMovementType, MoneyDirection, MoneyEntryType, SaleStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { InventoryService } from "./inventory.service";
 
 export interface CheckoutLineInput {
@@ -91,7 +91,7 @@ export class SalesService {
         data: {
           receiptNo,
           sellerId,
-          status: SaleStatus.COMPLETED,
+          status: "COMPLETED",
           discountAmount: new Prisma.Decimal(discountAmount),
           totalAmount: new Prisma.Decimal(finalTotal),
           totalCost: new Prisma.Decimal(totalCOGS),
@@ -126,7 +126,7 @@ export class SalesService {
             itemId: line.itemId,
             variantId: line.variantId,
             quantity: new Prisma.Decimal(-Math.abs(line.quantity)),
-            type: StockMovementType.SALE,
+            type: "SALE",
             refType: "SALE",
             refId: sale.id,
             userId: sellerId,
@@ -138,9 +138,9 @@ export class SalesService {
       // MoneyEntry (Cash In from sale)
       await tx.moneyEntry.create({
         data: {
-          direction: MoneyDirection.IN,
+          direction: "IN",
           amount: new Prisma.Decimal(finalTotal),
-          type: MoneyEntryType.SALE,
+          type: "SALE",
           refType: "SALE",
           refId: sale.id,
           userId: sellerId,
@@ -164,13 +164,13 @@ export class SalesService {
       });
 
       if (!sale) throw new Error("Sale not found.");
-      if (sale.status === SaleStatus.CANCELLED) throw new Error("Sale is already cancelled.");
+      if (sale.status === "CANCELLED") throw new Error("Sale is already cancelled.");
 
       // Mark Sale as cancelled
       const updatedSale = await tx.sale.update({
         where: { id: saleId },
         data: {
-          status: SaleStatus.CANCELLED,
+          status: "CANCELLED",
           cancelReason: reason,
         },
       });
@@ -182,7 +182,7 @@ export class SalesService {
             itemId: line.itemId,
             variantId: line.variantId,
             quantity: line.quantity, // positive to return stock
-            type: StockMovementType.RETURN,
+            type: "RETURN",
             refType: "SALE_CANCEL",
             refId: sale.id,
             userId: ownerUserId,
@@ -194,9 +194,9 @@ export class SalesService {
       // Reversing Money Entry (Cash Out refund)
       await tx.moneyEntry.create({
         data: {
-          direction: MoneyDirection.OUT,
+          direction: "OUT",
           amount: sale.totalAmount,
-          type: MoneyEntryType.SALE,
+          type: "SALE",
           refType: "SALE_CANCEL",
           refId: sale.id,
           userId: ownerUserId,

@@ -82,3 +82,4 @@ export function calculateExpectedCash(params: {
   const expected = openingCash + cashSales - cashExpenses - cashPurchases - ownerWithdrawals + ownerInjections;
   return Number(expected.toFixed(2));
 }
+

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { StockMovementType, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export class InventoryService {
   /**
@@ -46,7 +46,7 @@ export class InventoryService {
           itemId,
           variantId: variantId || null,
           quantity: new Prisma.Decimal(difference),
-          type: StockMovementType.CORRECTION,
+          type: "CORRECTION",
           reason: `Stock Count Correction: ${reason} (Was: ${currentStock}, Now: ${newCountedQuantity})`,
           refType: "AUDIT",
           userId,
@@ -90,7 +90,7 @@ export class InventoryService {
           itemId,
           variantId: variantId || null,
           quantity: new Prisma.Decimal(-Math.abs(quantity)),
-          type: StockMovementType.WRITE_OFF,
+          type: "WRITE_OFF",
           reason: `Write-off: ${reason}`,
           refType: "WRITE_OFF",
           userId,

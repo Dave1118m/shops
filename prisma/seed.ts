@@ -1,4 +1,4 @@
-import { PrismaClient, Role, UserStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -15,8 +15,8 @@ async function main() {
       name: "Shop Owner",
       username: "owner",
       passwordHash: ownerPassword,
-      role: Role.OWNER,
-      status: UserStatus.ACTIVE,
+      role: "OWNER",
+      status: "ACTIVE",
     },
   });
   console.log("Created Owner:", owner.username);
@@ -30,8 +30,8 @@ async function main() {
       name: "Sarah Seller",
       username: "seller",
       passwordHash: sellerPassword,
-      role: Role.SELLER,
-      status: UserStatus.ACTIVE,
+      role: "SELLER",
+      status: "ACTIVE",
     },
   });
   console.log("Created Seller:", seller.username);

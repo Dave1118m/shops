@@ -98,3 +98,4 @@ export interface ProfitAndLossReport {
   salesCount: number;
   expensesByCategory: Record<string, number>;
 }
+

@@ -7,13 +7,7 @@ import {
   calculateMarginPercentage,
   calculateExpectedCash,
 } from "@/lib/calculations";
-import {
-  StockMovementType,
-  MoneyDirection,
-  MoneyEntryType,
-  ExpenseCategory,
-  Prisma,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { InventoryService } from "./inventory.service";
 
 export interface RecordPurchaseInput {
@@ -104,7 +98,7 @@ export class FinanceService {
             itemId: line.itemId,
             variantId: line.variantId || null,
             quantity: new Prisma.Decimal(line.quantity),
-            type: StockMovementType.PURCHASE,
+            type: "PURCHASE",
             refType: "PURCHASE",
             refId: purchase.id,
             userId,
@@ -116,9 +110,9 @@ export class FinanceService {
       // MoneyEntry (Cash Out for purchase)
       await tx.moneyEntry.create({
         data: {
-          direction: MoneyDirection.OUT,
+          direction: "OUT",
           amount: new Prisma.Decimal(grandTotalPurchase),
-          type: MoneyEntryType.PURCHASE,
+          type: "PURCHASE",
           refType: "PURCHASE",
           refId: purchase.id,
           userId,
@@ -134,7 +128,7 @@ export class FinanceService {
    * FR-MON-03: Record shop operating expense.
    */
   static async recordExpense(params: {
-    category: ExpenseCategory;
+    category: string;
     amount: number;
     note?: string;
     userId: string;
@@ -157,9 +151,9 @@ export class FinanceService {
 
       await tx.moneyEntry.create({
         data: {
-          direction: MoneyDirection.OUT,
+          direction: "OUT",
           amount: new Prisma.Decimal(amount),
-          type: MoneyEntryType.EXPENSE,
+          type: "EXPENSE",
           refType: "EXPENSE",
           refId: expense.id,
           userId,
@@ -187,9 +181,9 @@ export class FinanceService {
     const isWithdrawal = type === "WITHDRAWAL";
     return await prisma.moneyEntry.create({
       data: {
-        direction: isWithdrawal ? MoneyDirection.OUT : MoneyDirection.IN,
+        direction: isWithdrawal ? "OUT" : "IN",
         amount: new Prisma.Decimal(amount),
-        type: isWithdrawal ? MoneyEntryType.OWNER_WITHDRAWAL : MoneyEntryType.OWNER_INJECTION,
+        type: isWithdrawal ? "OWNER_WITHDRAWAL" : "OWNER_INJECTION",
         notes: notes || (isWithdrawal ? "Owner Personal Withdrawal" : "Owner Capital Injection"),
         userId,
       },
@@ -229,11 +223,11 @@ export class FinanceService {
 
     for (const e of entries) {
       const amt = Number(e.amount);
-      if (e.type === MoneyEntryType.SALE && e.direction === MoneyDirection.IN) cashSales += amt;
-      if (e.type === MoneyEntryType.EXPENSE) cashExpenses += amt;
-      if (e.type === MoneyEntryType.PURCHASE) cashPurchases += amt;
-      if (e.type === MoneyEntryType.OWNER_WITHDRAWAL) ownerWithdrawals += amt;
-      if (e.type === MoneyEntryType.OWNER_INJECTION) ownerInjections += amt;
+      if (e.type === "SALE" && e.direction === "IN") cashSales += amt;
+      if (e.type === "EXPENSE") cashExpenses += amt;
+      if (e.type === "PURCHASE") cashPurchases += amt;
+      if (e.type === "OWNER_WITHDRAWAL") ownerWithdrawals += amt;
+      if (e.type === "OWNER_INJECTION") ownerInjections += amt;
     }
 
     const expectedCash = calculateExpectedCash({
@@ -301,7 +295,7 @@ export class FinanceService {
     // 3. Write-off losses (damage/loss/theft at buying price)
     const writeOffs = await prisma.stockMovement.findMany({
       where: {
-        type: StockMovementType.WRITE_OFF,
+        type: "WRITE_OFF",
         date: { gte: start, lte: end },
       },
       include: {
